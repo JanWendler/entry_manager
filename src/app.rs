@@ -17,6 +17,11 @@ pub struct TemplateApp {
     temp_entry: Entry,
     #[serde(skip)]
     pined_entry: Option<usize>,
+
+    title_color: Rgba,
+
+    #[serde(skip)]
+    setting_preferences: bool,
 }
 
 impl Default for TemplateApp {
@@ -29,6 +34,8 @@ impl Default for TemplateApp {
             generating_entry: false,
             temp_entry: Entry::new(),
             pined_entry: None,
+            title_color: Rgba::RED,
+            setting_preferences: false,
         }
     }
 }
@@ -48,9 +55,9 @@ impl TemplateApp {
         Default::default()
     }
 
-    fn render_entry(entry: &Entry, ui: &mut eframe::egui::Ui) {
+    fn render_entry(entry: &Entry, ui: &mut eframe::egui::Ui, color: Rgba) {
         ui.heading(&entry.title);
-        ui.colored_label(Rgba::RED, &entry.desc);
+        ui.colored_label(color, &entry.desc);
         ui.label(&entry.content);
     }
 }
@@ -71,6 +78,8 @@ impl eframe::App for TemplateApp {
             generating_entry,
             temp_entry,
             pined_entry,
+            title_color,
+            setting_preferences,
         } = self;
 
         // Examples of how to create different panels and windows.
@@ -87,6 +96,11 @@ impl eframe::App for TemplateApp {
                     }
                     if ui.button("Quit").clicked() {
                         _frame.close();
+                    }
+                });
+                ui.menu_button("View", |ui| {
+                    if ui.button("Preference").clicked() {
+                        *setting_preferences = true;
                     }
                 });
             });
@@ -124,6 +138,26 @@ impl eframe::App for TemplateApp {
                     });
                 });
         }
+        if *setting_preferences {
+            egui::Window::new("Preferences")
+                .collapsible(false)
+                .resizable(false)
+                .show(ctx, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.label("Title color: ");
+                        egui::ComboBox::from_label("Pick one!")
+                            .selected_text(format!("{:?}", title_color.to_array()))
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(title_color, Rgba::BLACK, "Black");
+                                ui.selectable_value(title_color, Rgba::BLUE, "Blue");
+                                ui.selectable_value(title_color, Rgba::RED, "Red");
+                            })
+                    });
+                    if ui.button("Done").clicked() {
+                        *setting_preferences = false;
+                    }
+                });
+        }
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
             ui.heading("Side Panel");
 
@@ -156,7 +190,7 @@ impl eframe::App for TemplateApp {
             // The central panel the region left after adding TopPanel's and SidePanel's
             match pined_entry {
                 Some(id) => {
-                    TemplateApp::render_entry(entries.get(*id).unwrap(), ui);
+                    TemplateApp::render_entry(entries.get(*id).unwrap(), ui, *title_color);
                     if ui.button("Unpin").clicked() {
                         *pined_entry = None;
                     }
@@ -180,7 +214,7 @@ impl eframe::App for TemplateApp {
                 .show(ui, |ui| {
                     let mut delet_id: Option<usize> = None;
                     for (id, _) in entries.iter().enumerate() {
-                        TemplateApp::render_entry(entries.get(id).unwrap(), ui);
+                        TemplateApp::render_entry(entries.get(id).unwrap(), ui, *title_color);
                         ui.horizontal(|ui|{
                             if ui.button("Pin").clicked() {
                                 *pined_entry = Some(id);
