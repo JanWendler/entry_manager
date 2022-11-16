@@ -98,16 +98,20 @@ impl eframe::App for TemplateApp {
                         _frame.close();
                     }
                 });
+                ui.menu_button("Edit", |ui| {
+					if ui.button("Delete All Entries").clicked() {
+						entries.clear();
+                        *pined_entry = None;
+					}
+				});
                 ui.menu_button("View", |ui| {
                     if ui.button("Preference").clicked() {
                         *setting_preferences = true;
                     }
                 });
-				ui.menu_button("Edit", |ui| {
-					if ui.button("Delete All Entries").clicked() {
-						entries.clear();
-					}
-				});
+				ui.menu_button("Help", |ui|{
+                    ui.hyperlink_to("Docs", "https://docs.rs/egui/latest/egui/")
+                })
             });
         });
         if *generating_entry {
