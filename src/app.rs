@@ -18,7 +18,7 @@ pub struct TemplateApp {
     #[serde(skip)]
     pined_entry: Option<usize>,
 
-    title_color: Rgba,
+    title_color: Color,
 
     #[serde(skip)]
     setting_preferences: bool,
@@ -34,7 +34,7 @@ impl Default for TemplateApp {
             generating_entry: false,
             temp_entry: Entry::new(),
             pined_entry: None,
-            title_color: Rgba::RED,
+            title_color: Color::new(),
             setting_preferences: false,
         }
     }
@@ -146,11 +146,14 @@ impl eframe::App for TemplateApp {
                     ui.horizontal(|ui| {
                         ui.label("Title color: ");
                         egui::ComboBox::from_label("Pick one!")
-                            .selected_text(format!("{:?}", title_color.to_array()))
+                            .selected_text(&title_color.name)
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(title_color, Rgba::BLACK, "Black");
-                                ui.selectable_value(title_color, Rgba::BLUE, "Blue");
-                                ui.selectable_value(title_color, Rgba::RED, "Red");
+                                ui.selectable_value(title_color, Color{ color: Rgba::BLACK,
+                                    name: "Black".to_string()}, "Black");
+                                ui.selectable_value(title_color, Color{ color: Rgba::BLUE,
+                                    name: "Blue".to_string()}, "Blue");
+                                ui.selectable_value(title_color, Color{ color: Rgba::RED,
+                                    name: "Red".to_string()}, "Red");
                             })
                     });
                     if ui.button("Done").clicked() {
@@ -185,12 +188,11 @@ impl eframe::App for TemplateApp {
                 });
             });
         });
-
         egui::CentralPanel::default().show(ctx, |ui| {
             // The central panel the region left after adding TopPanel's and SidePanel's
             match pined_entry {
                 Some(id) => {
-                    TemplateApp::render_entry(entries.get(*id).unwrap(), ui, *title_color);
+                    TemplateApp::render_entry(entries.get(*id).unwrap(), ui, title_color.color);
                     if ui.button("Unpin").clicked() {
                         *pined_entry = None;
                     }
@@ -214,7 +216,7 @@ impl eframe::App for TemplateApp {
                 .show(ui, |ui| {
                     let mut delet_id: Option<usize> = None;
                     for (id, _) in entries.iter().enumerate() {
-                        TemplateApp::render_entry(entries.get(id).unwrap(), ui, *title_color);
+                        TemplateApp::render_entry(entries.get(id).unwrap(), ui, title_color.color);
                         ui.horizontal(|ui|{
                             if ui.button("Pin").clicked() {
                                 *pined_entry = Some(id);
@@ -226,13 +228,11 @@ impl eframe::App for TemplateApp {
                         
                         ui.add(Separator::default());
                     }
-                    match delet_id {
-                        Some(id) => {
-                            if *pined_entry == Some(id) {
-                                *pined_entry = None;
-                            }
-                            drop(entries.remove(id));},
-                        None => (),
+                    if let Some(id) = delet_id {
+                        if *pined_entry == Some(id) {
+                            *pined_entry = None;
+                        }
+                        drop(entries.remove(id));
                     };
                 });
         });
@@ -276,5 +276,17 @@ impl Entry {
         self.title = "".to_string();
         self.desc = "".to_string();
         self.content = "".to_string();
+    }
+}
+
+#[derive(serde::Deserialize, serde::Serialize, PartialEq)]
+struct Color {
+    color: Rgba,
+    name: String,
+}
+
+impl Color {
+    fn new() -> Color {
+        Color { color: Rgba::BLACK, name: "Black".to_string(), }
     }
 }
