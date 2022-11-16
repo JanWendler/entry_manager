@@ -154,6 +154,16 @@ impl eframe::App for TemplateApp {
                                     name: "Blue".to_string()}, "Blue");
                                 ui.selectable_value(title_color, Color{ color: Rgba::RED,
                                     name: "Red".to_string()}, "Red");
+                                ui.selectable_value(title_color, Color{ color: Rgba::GREEN,
+                                    name: "Green".to_string()}, "Green");
+                                ui.selectable_value(title_color, Color{ color: Rgba::WHITE,
+                                    name: "White".to_string()}, "White");
+                                ui.selectable_value(title_color, Color{ color: Rgba::from_rgb(0.0, 1.0, 1.0),
+                                    name: "Cyan".to_string()}, "Cyan");
+                                ui.selectable_value(title_color, Color{ color: Rgba::from_rgb(1.0, 1.0, 0.0),
+                                    name: "Yellow".to_string()}, "Yellow");
+                                ui.selectable_value(title_color, Color{ color: Rgba::from_rgb(1.0, 0.0, 1.0),
+                                    name: "Magenta".to_string()}, "Magenta");
                             })
                     });
                     if ui.button("Done").clicked() {
