@@ -103,6 +103,11 @@ impl eframe::App for TemplateApp {
                         *setting_preferences = true;
                     }
                 });
+				ui.menu_button("Edit", |ui| {
+					if ui.button("Delete All Entries").clicked() {
+						entries.clear();
+					}
+				});
             });
         });
         if *generating_entry {
