@@ -63,17 +63,36 @@ impl TemplateApp {
 
     fn render_entry(entry: &Entry, ui: &mut eframe::egui::Ui, color: Rgba) {
         ui.heading(&entry.name);
-        ui.colored_label(color, &entry.owner);
-        ui.label(&entry.status);
+        ui.horizontal(|ui| {
+            ui.vertical(|ui| {
+                ui.horizontal(|ui| {
+                    ui.label("Owner:");
+                    ui.colored_label(color, &entry.owner);
+                });
+                ui.horizontal(|ui| {
+                    ui.label("Date:");
+                    ui.label(&entry.date);
+                });
+                ui.horizontal(|ui| {
+                    ui.label("Location:");
+                    ui.label(&entry.location)
+                });
+            });
+            ui.vertical(|ui| {
+                ui.horizontal(|ui| {
+                    ui.label("Tags:");
+                    ui.label("&entry.tags.");
+                });
+                ui.horizontal(|ui| {
+                    ui.label("Status:");
+                    ui.label(&entry.status);
+                });
+            });
+        });
     }
 }
 
 impl eframe::App for TemplateApp {
-    /// Called by the frame work to save state before shutdown.
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
-    }
-
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
@@ -106,24 +125,23 @@ impl eframe::App for TemplateApp {
                     }
                 });
                 ui.menu_button("Edit", |ui| {
-					if ui.button("Delete All Entries").clicked() {
-						entries.clear();
+                    if ui.button("Delete All Entries").clicked() {
+                        entries.clear();
                         *pined_entry = None;
-					}
-				});
+                    }
+                });
                 ui.menu_button("View", |ui| {
                     if ui.button("Preference").clicked() {
                         *setting_preferences = true;
                     }
                 });
-				ui.menu_button("Help", |ui|{
+                ui.menu_button("Help", |ui| {
                     ui.hyperlink_to("Docs", "https://docs.rs/egui/latest/egui/")
                 });
-                ui.horizontal(|ui| {
-                    ui.add_space(300.0);
-                    ui.label("Search: ");
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::LEFT), |ui| {
                     ui.text_edit_singleline(search);
-                });
+                    ui.label("Search:");
+                })
             });
         });
         if *generating_entry {
@@ -159,7 +177,7 @@ impl eframe::App for TemplateApp {
                         ui.label("Status: ");
                         ui.text_edit_singleline(&mut temp_entry.status);
                     });
-                    
+
                     ui.horizontal(|ui| {
                         if ui.button("Done").clicked() {
                             entries.push(Entry::from_str(
@@ -174,7 +192,6 @@ impl eframe::App for TemplateApp {
                             *generating_entry = false;
                         }
                     });
-
                 });
         }
         if *setting_preferences {
@@ -187,22 +204,38 @@ impl eframe::App for TemplateApp {
                         egui::ComboBox::from_label("Pick one!")
                             .selected_text(&title_color.name)
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(title_color, Color{ color: Rgba::BLACK,
-                                    name: "Black".to_string()}, "Black");
-                                ui.selectable_value(title_color, Color{ color: Rgba::BLUE,
-                                    name: "Blue".to_string()}, "Blue");
-                                ui.selectable_value(title_color, Color{ color: Rgba::RED,
-                                    name: "Red".to_string()}, "Red");
-                                ui.selectable_value(title_color, Color{ color: Rgba::GREEN,
-                                    name: "Green".to_string()}, "Green");
-                                ui.selectable_value(title_color, Color{ color: Rgba::WHITE,
-                                    name: "White".to_string()}, "White");
-                                ui.selectable_value(title_color, Color{ color: Rgba::from_rgb(0.0, 1.0, 1.0),
-                                    name: "Cyan".to_string()}, "Cyan");
-                                ui.selectable_value(title_color, Color{ color: Rgba::from_rgb(1.0, 1.0, 0.0),
-                                    name: "Yellow".to_string()}, "Yellow");
-                                ui.selectable_value(title_color, Color{ color: Rgba::from_rgb(1.0, 0.0, 1.0),
-                                    name: "Magenta".to_string()}, "Magenta");
+                                ui.selectable_value(title_color, Color {
+                                    color: Rgba::BLACK,
+                                    name: "Black".to_string(),
+                                }, "Black");
+                                ui.selectable_value(title_color, Color {
+                                    color: Rgba::BLUE,
+                                    name: "Blue".to_string(),
+                                }, "Blue");
+                                ui.selectable_value(title_color, Color {
+                                    color: Rgba::RED,
+                                    name: "Red".to_string(),
+                                }, "Red");
+                                ui.selectable_value(title_color, Color {
+                                    color: Rgba::GREEN,
+                                    name: "Green".to_string(),
+                                }, "Green");
+                                ui.selectable_value(title_color, Color {
+                                    color: Rgba::WHITE,
+                                    name: "White".to_string(),
+                                }, "White");
+                                ui.selectable_value(title_color, Color {
+                                    color: Rgba::from_rgb(0.0, 1.0, 1.0),
+                                    name: "Cyan".to_string(),
+                                }, "Cyan");
+                                ui.selectable_value(title_color, Color {
+                                    color: Rgba::from_rgb(1.0, 1.0, 0.0),
+                                    name: "Yellow".to_string(),
+                                }, "Yellow");
+                                ui.selectable_value(title_color, Color {
+                                    color: Rgba::from_rgb(1.0, 0.0, 1.0),
+                                    name: "Magenta".to_string(),
+                                }, "Magenta");
                             })
                     });
                     if ui.button("Done").clicked() {
@@ -264,18 +297,19 @@ impl eframe::App for TemplateApp {
                 .always_show_scroll(false)
                 .show(ui, |ui| {
                     let mut delet_id: Option<usize> = None;
-                    for (id, _) in entries.iter().enumerate() {
-                        TemplateApp::render_entry(entries.get(id).unwrap(), ui, title_color.color);
-                        ui.horizontal(|ui|{
-                            if ui.button("Pin").clicked() {
-                                *pined_entry = Some(id);
-                            }
-                            if ui.button("Delete").clicked() {
-                                delet_id = Some(id);
-                            }
-                        });
-                        
-                        ui.add(Separator::default());
+                    for (id, entry) in entries.iter().enumerate() {
+                        if entry.contains(search) {
+                            TemplateApp::render_entry(entry, ui, title_color.color);
+                            ui.horizontal(|ui| {
+                                if ui.button("Pin").clicked() {
+                                    *pined_entry = Some(id);
+                                }
+                                if ui.button("Delete").clicked() {
+                                    delet_id = Some(id);
+                                }
+                            });
+                            ui.add(Separator::default());
+                        };
                     }
                     if let Some(id) = delet_id {
                         if *pined_entry == Some(id) {
@@ -294,6 +328,11 @@ impl eframe::App for TemplateApp {
                 ui.label("You would normally chose either panels OR windows.");
             });
         }
+    }
+
+    /// Called by the frame work to save state before shutdown.
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        eframe::set_value(storage, eframe::APP_KEY, self);
     }
 }
 
@@ -316,6 +355,23 @@ impl Entry {
         Entry { name: name.to_string(), owner: owner.to_string(), date: date.to_string(), location: location.to_string(), tags: tags.to_vec(), status: status.to_string() }
     }
 
+    fn contains(&self, s: &str) -> bool {
+        if self.name.to_lowercase().contains(&s.to_lowercase()) {
+            return true;
+        } else if self.date.to_lowercase().contains(&s.to_lowercase()) {
+            return true;
+        } else if self.location.to_lowercase().contains(&s.to_lowercase()) {
+            return true;
+        } else if self.owner.to_lowercase().contains(&s.to_lowercase()) {
+            return true;
+        } else if self.status.to_lowercase().contains(&s.to_lowercase()) {
+            return true;
+        } else if self.tags.contains(&Tag::from_str(s)) {
+            return true;
+        }
+        false
+    }
+
     fn clear(&mut self) {
         self.name = String::new();
         self.owner = String::new();
@@ -334,18 +390,17 @@ struct Color {
 
 impl Color {
     fn new() -> Color {
-        Color { color: Rgba::BLACK, name: "Black".to_string(), }
+        Color { color: Rgba::BLACK, name: "Black".to_string() }
     }
 }
 
-
-#[derive(serde::Deserialize, serde::Serialize, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Clone, PartialEq)]
 struct Tag {
     name: String,
 }
 
 impl Tag {
     fn from_str(s: &str) -> Tag {
-        Tag { name: s.to_string()}
+        Tag { name: s.to_string() }
     }
 }
