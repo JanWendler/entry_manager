@@ -1,3 +1,5 @@
+use std::vec;
+
 use egui::{Separator, Rgba};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -22,6 +24,9 @@ pub struct TemplateApp {
 
     #[serde(skip)]
     setting_preferences: bool,
+    #[serde(skip)]
+    search: String,
+
 }
 
 impl Default for TemplateApp {
@@ -36,6 +41,7 @@ impl Default for TemplateApp {
             pined_entry: None,
             title_color: Color::new(),
             setting_preferences: false,
+            search: String::new(),
         }
     }
 }
@@ -56,9 +62,9 @@ impl TemplateApp {
     }
 
     fn render_entry(entry: &Entry, ui: &mut eframe::egui::Ui, color: Rgba) {
-        ui.heading(&entry.title);
-        ui.colored_label(color, &entry.desc);
-        ui.label(&entry.content);
+        ui.heading(&entry.name);
+        ui.colored_label(color, &entry.owner);
+        ui.label(&entry.status);
     }
 }
 
@@ -80,6 +86,7 @@ impl eframe::App for TemplateApp {
             pined_entry,
             title_color,
             setting_preferences,
+            search,
         } = self;
 
         // Examples of how to create different panels and windows.
@@ -111,7 +118,12 @@ impl eframe::App for TemplateApp {
                 });
 				ui.menu_button("Help", |ui|{
                     ui.hyperlink_to("Docs", "https://docs.rs/egui/latest/egui/")
-                })
+                });
+                ui.horizontal(|ui| {
+                    ui.add_space(300.0);
+                    ui.label("Search: ");
+                    ui.text_edit_singleline(search);
+                });
             });
         });
         if *generating_entry {
@@ -120,31 +132,49 @@ impl eframe::App for TemplateApp {
                 .resizable(true)
                 .show(ctx, |ui| {
                     ui.horizontal(|ui| {
-                        ui.label("Title: ");
-                        ui.text_edit_singleline(&mut temp_entry.title);
+                        ui.label("Name: ");
+                        ui.text_edit_singleline(&mut temp_entry.name);
                     });
 
                     ui.horizontal(|ui| {
-                        ui.label("Description: ");
-                        ui.text_edit_singleline(&mut temp_entry.desc);
+                        ui.label("Owner: ");
+                        ui.text_edit_singleline(&mut temp_entry.owner);
                     });
 
                     ui.horizontal(|ui| {
-                        ui.label("Content: ");
-                        ui.text_edit_singleline(&mut temp_entry.content);
+                        ui.label("Date: ");
+                        ui.text_edit_singleline(&mut temp_entry.date);
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Location: ");
+                        ui.text_edit_singleline(&mut temp_entry.location);
+                    });
+                    let mut tags: &str = "";
+                    ui.horizontal(|ui| {
+                        ui.label("Tags: ");
+                        ui.text_edit_singleline(&mut tags);
+                    });
+                    temp_entry.tags.push(Tag::from_str(tags));
+                    ui.horizontal(|ui| {
+                        ui.label("Status: ");
+                        ui.text_edit_singleline(&mut temp_entry.status);
                     });
                     
                     ui.horizontal(|ui| {
                         if ui.button("Done").clicked() {
                             entries.push(Entry::from_str(
-                                &temp_entry.title,
-                                &temp_entry.desc,
-                                &temp_entry.content,
+                                &temp_entry.name,
+                                &temp_entry.owner,
+                                &temp_entry.date,
+                                &temp_entry.location,
+                                &temp_entry.tags,
+                                &temp_entry.status,
                             ));
                             temp_entry.clear();
                             *generating_entry = false;
                         }
                     });
+
                 });
         }
         if *setting_preferences {
@@ -228,7 +258,7 @@ impl eframe::App for TemplateApp {
             }
 
             ui.add(Separator::default());
-            ui.add_space(5.0);
+            ui.add_space(10.0);
 
             egui::ScrollArea::vertical()
                 .always_show_scroll(false)
@@ -269,32 +299,30 @@ impl eframe::App for TemplateApp {
 
 #[derive(serde::Deserialize, serde::Serialize)]
 struct Entry {
-    title: String,
-    desc: String,
-    content: String,
+    name: String,
+    owner: String,
+    date: String,
+    location: String,
+    tags: Vec<Tag>,
+    status: String,
 }
 
 impl Entry {
     fn new() -> Entry {
-        Entry {
-            title: "".to_string(),
-            desc: "".to_string(),
-            content: "".to_string(),
-        }
+        Entry { name: String::new(), owner: String::new(), date: String::new(), location: String::new(), tags: vec![], status: String::new() }
     }
 
-    fn from_str(title: &str, desc: &str, content: &str) -> Entry {
-        Entry {
-            title: title.to_string(),
-            desc: desc.to_string(),
-            content: content.to_string(),
-        }
+    fn from_str(name: &str, owner: &str, date: &str, location: &str, tags: &[Tag], status: &str) -> Entry {
+        Entry { name: name.to_string(), owner: owner.to_string(), date: date.to_string(), location: location.to_string(), tags: tags.to_vec(), status: status.to_string() }
     }
 
     fn clear(&mut self) {
-        self.title = "".to_string();
-        self.desc = "".to_string();
-        self.content = "".to_string();
+        self.name = String::new();
+        self.owner = String::new();
+        self.date = String::new();
+        self.location = String::new();
+        self.tags = vec![];
+        self.status = String::new();
     }
 }
 
@@ -307,5 +335,17 @@ struct Color {
 impl Color {
     fn new() -> Color {
         Color { color: Rgba::BLACK, name: "Black".to_string(), }
+    }
+}
+
+
+#[derive(serde::Deserialize, serde::Serialize, Clone)]
+struct Tag {
+    name: String,
+}
+
+impl Tag {
+    fn from_str(s: &str) -> Tag {
+        Tag { name: s.to_string()}
     }
 }
