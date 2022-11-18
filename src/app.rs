@@ -1,6 +1,7 @@
 use std::vec;
+use eframe::epaint::Color32;
 
-use egui::{Separator, Rgba};
+use egui::{Separator, Rgba, RichText};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -21,7 +22,7 @@ pub struct TemplateApp {
     pined_entry: Option<usize>,
 
     title_color: Color,
-
+    name_color: Color,
     #[serde(skip)]
     setting_preferences: bool,
     #[serde(skip)]
@@ -42,6 +43,7 @@ impl Default for TemplateApp {
             title_color: Color::new(),
             setting_preferences: false,
             search: String::new(),
+            name_color: Color::new(),
         }
     }
 }
@@ -61,13 +63,13 @@ impl TemplateApp {
         Default::default()
     }
 
-    fn render_entry(entry: &Entry, ui: &mut eframe::egui::Ui, color: Rgba) {
-        ui.heading(&entry.name);
+    fn render_entry(entry: &Entry, ui: &mut eframe::egui::Ui, title_color: Rgba, name_color: Rgba) {
+        ui.heading(RichText::new(&entry.name).color(title_color));
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 ui.horizontal(|ui| {
                     ui.label("Owner:");
-                    ui.colored_label(color, &entry.owner);
+                    ui.colored_label(name_color, &entry.owner);
                 });
                 ui.horizontal(|ui| {
                     ui.label("Date:");
@@ -75,9 +77,10 @@ impl TemplateApp {
                 });
                 ui.horizontal(|ui| {
                     ui.label("Location:");
-                    ui.label(&entry.location)
+                    ui.label(&entry.location);
                 });
             });
+            ui.add_space(50.0);
             ui.vertical(|ui| {
                 ui.horizontal(|ui| {
                     ui.label("Tags:");
@@ -89,6 +92,45 @@ impl TemplateApp {
                 });
             });
         });
+    }
+
+    fn render_color_list(ui: &mut eframe::egui::Ui, color: &mut Color, label: &str) {
+        egui::ComboBox::from_id_source(label)
+            .selected_text(&color.name)
+            .show_ui(ui, |ui| {
+                ui.selectable_value(color, Color {
+                    color: Rgba::BLACK,
+                    name: "Black".to_string(),
+                }, "Black");
+                ui.selectable_value(color, Color {
+                    color: Rgba::BLUE,
+                    name: "Blue".to_string(),
+                }, "Blue");
+                ui.selectable_value(color, Color {
+                    color: Rgba::RED,
+                    name: "Red".to_string(),
+                }, "Red");
+                ui.selectable_value(color, Color {
+                    color: Rgba::GREEN,
+                    name: "Green".to_string(),
+                }, "Green");
+                ui.selectable_value(color, Color {
+                    color: Rgba::WHITE,
+                    name: "White".to_string(),
+                }, "White");
+                ui.selectable_value(color, Color {
+                    color: Rgba::from_rgb(0.0, 1.0, 1.0),
+                    name: "Cyan".to_string(),
+                }, "Cyan");
+                ui.selectable_value(color, Color {
+                    color: Rgba::from_rgb(1.0, 1.0, 0.0),
+                    name: "Yellow".to_string(),
+                }, "Yellow");
+                ui.selectable_value(color, Color {
+                    color: Rgba::from_rgb(1.0, 0.0, 1.0),
+                    name: "Magenta".to_string(),
+                }, "Magenta");
+            });
     }
 }
 
@@ -106,6 +148,7 @@ impl eframe::App for TemplateApp {
             title_color,
             setting_preferences,
             search,
+            name_color,
         } = self;
 
         // Examples of how to create different panels and windows.
@@ -150,33 +193,46 @@ impl eframe::App for TemplateApp {
                 .resizable(true)
                 .show(ctx, |ui| {
                     ui.horizontal(|ui| {
-                        ui.label("Name: ");
-                        ui.text_edit_singleline(&mut temp_entry.name);
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::RIGHT), |ui| {
+                            ui.text_edit_singleline(&mut temp_entry.name);
+                            ui.label("Name: ");
+                        });
                     });
 
                     ui.horizontal(|ui| {
-                        ui.label("Owner: ");
-                        ui.text_edit_singleline(&mut temp_entry.owner);
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::RIGHT), |ui| {
+                            ui.text_edit_singleline(&mut temp_entry.owner);
+                            ui.label("Owner: ");
+                        });
                     });
 
                     ui.horizontal(|ui| {
-                        ui.label("Date: ");
-                        ui.text_edit_singleline(&mut temp_entry.date);
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::RIGHT), |ui| {
+                            ui.text_edit_singleline(&mut temp_entry.date);
+                            ui.label("Date: ");
+                        });
                     });
                     ui.horizontal(|ui| {
-                        ui.label("Location: ");
-                        ui.text_edit_singleline(&mut temp_entry.location);
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::RIGHT), |ui| {
+                            ui.text_edit_singleline(&mut temp_entry.location);
+                            ui.label("Location: ");
+                        });
                     });
                     let mut tags: &str = "";
                     ui.horizontal(|ui| {
-                        ui.label("Tags: ");
-                        ui.text_edit_singleline(&mut tags);
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::RIGHT), |ui| {
+                            ui.text_edit_singleline(&mut tags);
+                            ui.label("Tags: ");
+                        });
                     });
                     temp_entry.tags.push(Tag::from_str(tags));
                     ui.horizontal(|ui| {
-                        ui.label("Status: ");
-                        ui.text_edit_singleline(&mut temp_entry.status);
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::RIGHT), |ui| {
+                            ui.text_edit_singleline(&mut temp_entry.status);
+                            ui.label("Status: ");
+                        });
                     });
+
 
                     ui.horizontal(|ui| {
                         if ui.button("Done").clicked() {
@@ -201,42 +257,11 @@ impl eframe::App for TemplateApp {
                 .show(ctx, |ui| {
                     ui.horizontal(|ui| {
                         ui.label("Title color: ");
-                        egui::ComboBox::from_label("Pick one!")
-                            .selected_text(&title_color.name)
-                            .show_ui(ui, |ui| {
-                                ui.selectable_value(title_color, Color {
-                                    color: Rgba::BLACK,
-                                    name: "Black".to_string(),
-                                }, "Black");
-                                ui.selectable_value(title_color, Color {
-                                    color: Rgba::BLUE,
-                                    name: "Blue".to_string(),
-                                }, "Blue");
-                                ui.selectable_value(title_color, Color {
-                                    color: Rgba::RED,
-                                    name: "Red".to_string(),
-                                }, "Red");
-                                ui.selectable_value(title_color, Color {
-                                    color: Rgba::GREEN,
-                                    name: "Green".to_string(),
-                                }, "Green");
-                                ui.selectable_value(title_color, Color {
-                                    color: Rgba::WHITE,
-                                    name: "White".to_string(),
-                                }, "White");
-                                ui.selectable_value(title_color, Color {
-                                    color: Rgba::from_rgb(0.0, 1.0, 1.0),
-                                    name: "Cyan".to_string(),
-                                }, "Cyan");
-                                ui.selectable_value(title_color, Color {
-                                    color: Rgba::from_rgb(1.0, 1.0, 0.0),
-                                    name: "Yellow".to_string(),
-                                }, "Yellow");
-                                ui.selectable_value(title_color, Color {
-                                    color: Rgba::from_rgb(1.0, 0.0, 1.0),
-                                    name: "Magenta".to_string(),
-                                }, "Magenta");
-                            })
+                        TemplateApp::render_color_list(ui, title_color, "Title color:");
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Name color: ");
+                        TemplateApp::render_color_list(ui, name_color, "Name color:");
                     });
                     if ui.button("Done").clicked() {
                         *setting_preferences = false;
@@ -274,7 +299,7 @@ impl eframe::App for TemplateApp {
             // The central panel the region left after adding TopPanel's and SidePanel's
             match pined_entry {
                 Some(id) => {
-                    TemplateApp::render_entry(entries.get(*id).unwrap(), ui, title_color.color);
+                    TemplateApp::render_entry(entries.get(*id).unwrap(), ui, title_color.color, name_color.color);
                     if ui.button("Unpin").clicked() {
                         *pined_entry = None;
                     }
@@ -299,7 +324,7 @@ impl eframe::App for TemplateApp {
                     let mut delet_id: Option<usize> = None;
                     for (id, entry) in entries.iter().enumerate() {
                         if entry.contains(search) {
-                            TemplateApp::render_entry(entry, ui, title_color.color);
+                            TemplateApp::render_entry(entry, ui, title_color.color, name_color.color);
                             ui.horizontal(|ui| {
                                 if ui.button("Pin").clicked() {
                                     *pined_entry = Some(id);
