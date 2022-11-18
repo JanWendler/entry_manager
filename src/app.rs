@@ -1,3 +1,4 @@
+use std::ops::Not;
 use std::vec;
 use eframe::epaint::Color32;
 
@@ -28,6 +29,13 @@ pub struct TemplateApp {
     #[serde(skip)]
     search: String,
 
+    tags: Vec<Tag>,
+
+    #[serde(skip)]
+    setting_tags: bool,
+
+    #[serde(skip)]
+    temp_tag: String,
 }
 
 impl Default for TemplateApp {
@@ -44,6 +52,9 @@ impl Default for TemplateApp {
             setting_preferences: false,
             search: String::new(),
             name_color: Color::new(),
+            tags: vec![],
+            setting_tags: false,
+            temp_tag: String::new(),
         }
     }
 }
@@ -149,6 +160,9 @@ impl eframe::App for TemplateApp {
             setting_preferences,
             search,
             name_color,
+            tags,
+            setting_tags,
+            temp_tag,
         } = self;
 
         // Examples of how to create different panels and windows.
@@ -221,6 +235,9 @@ impl eframe::App for TemplateApp {
                     let mut tags: &str = "";
                     ui.horizontal(|ui| {
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::RIGHT), |ui| {
+                            if ui.button("Add").clicked() {
+                                *setting_tags = true;
+                            }
                             ui.text_edit_singleline(&mut tags);
                             ui.label("Tags: ");
                         });
@@ -248,6 +265,28 @@ impl eframe::App for TemplateApp {
                             *generating_entry = false;
                         }
                     });
+                });
+        }
+        if *setting_tags {
+            egui::Window::new("Tags")
+                .collapsible(false)
+                .resizable(true)
+                .show(ctx, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.text_edit_singleline(temp_tag);
+                        if ui.button("Add").clicked() {
+                            tags.push(Tag::from_str(&temp_tag));
+                            temp_tag.clear();
+                        };
+                    });
+                    for tag in tags {
+                        if ui.selectable_label(tag.selected, &tag.name).clicked() {
+                            tag.selected = tag.selected.not();
+                        }
+                    }
+                    if ui.button("Close").clicked() {
+                        *setting_tags = false;
+                    };
                 });
         }
         if *setting_preferences {
@@ -280,7 +319,16 @@ impl eframe::App for TemplateApp {
             if ui.button("Increment").clicked() {
                 *value += 1.0;
             }
+            ui.add(Separator::default());
+            ui.add_space(10.0);
+            ui.heading(RichText::new("Filter").color(Rgba::GREEN));
+            ui.label("Tags");
 
+            for tag in tags {
+                if ui.selectable_label(tag.selected, &tag.name).clicked() {
+                    tag.selected = tag.selected.not();
+                }
+            }
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 0.0;
@@ -422,10 +470,14 @@ impl Color {
 #[derive(serde::Deserialize, serde::Serialize, Clone, PartialEq)]
 struct Tag {
     name: String,
+    selected: bool,
 }
 
 impl Tag {
     fn from_str(s: &str) -> Tag {
-        Tag { name: s.to_string() }
+        Tag {
+            name: s.to_string(),
+            selected: false,
+        }
     }
 }
